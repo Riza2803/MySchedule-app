@@ -1,10 +1,10 @@
+<p align="center">
+  <img src="./assets/banner.png" alt="MySchedule" width="100%" />
+</p>
+
 # MySchedule
 
 Aplikasi manajemen agenda harian luring (offline-first) dengan widget interaktif Android. Dibuat menggunakan React Native (Expo SDK 58), TypeScript, dan SQLite lokal.
-
-<p align="center">
-  <img src="./assets/icon.png" width="120" height="120" alt="Logo MySchedule" style="border-radius: 24px;" />
-</p>
 
 ## Fitur
 
