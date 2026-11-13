@@ -117,31 +117,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               </View>
             </View>
 
-            {/* Offline Storage Info */}
-            <Text style={styles.sectionHeading}>Penyimpanan & Keamanan</Text>
-            <View style={styles.infoCard}>
-              <View style={styles.infoRow}>
-                <Ionicons name="shield-checkmark-outline" size={20} color={colors.accentSage} />
-                <View style={styles.infoTextCol}>
-                  <Text style={styles.infoItemTitle}>100% Offline-first</Text>
-                  <Text style={styles.infoItemDesc}>
-                    Seluruh agenda tersimpan di database SQLite lokal perangkat. Tidak ada data yang
-                    dikirim ke server eksternal.
-                  </Text>
-                </View>
-              </View>
-
-              <View style={[styles.infoRow, { marginTop: 14 }]}>
-                <Ionicons name="phone-portrait-outline" size={20} color={colors.textSecondary} />
-                <View style={styles.infoTextCol}>
-                  <Text style={styles.infoItemTitle}>Aplikasi MySchedule v1.0.0</Text>
-                  <Text style={styles.infoItemDesc}>
-                    Dibangun dengan React Native, Expo SDK 58, dan TypeScript.
-                  </Text>
-                </View>
-              </View>
-            </View>
-
             <View style={{ height: 30 }} />
           </ScrollView>
         </View>

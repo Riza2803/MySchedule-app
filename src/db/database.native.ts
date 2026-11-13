@@ -237,3 +237,39 @@ export async function getCategories(): Promise<Category[]> {
     return [...defaultCategories];
   }
 }
+
+export async function addCategory(category: Category): Promise<void> {
+  if (!db) return;
+  try {
+    await db.runAsync(
+      'INSERT INTO categories (id, name, color, icon) VALUES (?, ?, ?, ?);',
+      [category.id, category.name, category.color, category.icon]
+    );
+  } catch (err) {
+    console.error('addCategory error:', err);
+  }
+}
+
+export async function updateCategory(category: Category): Promise<void> {
+  if (!db) return;
+  try {
+    await db.runAsync(
+      'UPDATE categories SET name=?, color=?, icon=? WHERE id=?;',
+      [category.name, category.color, category.icon, category.id]
+    );
+  } catch (err) {
+    console.error('updateCategory error:', err);
+  }
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  if (!db) return;
+  try {
+    // Re-assign agendas in deleted category to fallback
+    const fallbackId = 'cat-personal';
+    await db.runAsync('UPDATE agendas SET categoryId=? WHERE categoryId=?;', [fallbackId, id]);
+    await db.runAsync('DELETE FROM categories WHERE id=?;', [id]);
+  } catch (err) {
+    console.error('deleteCategory error:', err);
+  }
+}

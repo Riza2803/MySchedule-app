@@ -21,6 +21,9 @@ import {
   toggleAgendaCompletion,
   deleteAgenda,
   getCategories,
+  addCategory,
+  updateCategory,
+  deleteCategory,
 } from './src/db/database';
 import { triggerHaptic } from './src/utils/haptics';
 
@@ -62,6 +65,14 @@ export default function App() {
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
 
+  const refreshAgendas = async () => {
+    const all = await getAgendas();
+    setAllAgendas(all);
+    const dateParam = currentTab === 'today' ? selectedDate : undefined;
+    const filtered = await getAgendas(dateParam, selectedCategoryId, currentFilter);
+    setAgendas(filtered);
+  };
+
   useEffect(() => {
     async function setup() {
       await initDatabase();
@@ -73,18 +84,12 @@ export default function App() {
     setup();
   }, []);
 
-  const refreshAgendas = async () => {
-    const all = await getAgendas();
-    setAllAgendas(all);
-    const filtered = await getAgendas(selectedDate, selectedCategoryId, currentFilter);
-    setAgendas(filtered);
-  };
-
   useEffect(() => {
     if (!loading) {
-      getAgendas(selectedDate, selectedCategoryId, currentFilter).then(setAgendas);
+      const dateParam = currentTab === 'today' ? selectedDate : undefined;
+      getAgendas(dateParam, selectedCategoryId, currentFilter).then(setAgendas);
     }
-  }, [selectedDate, selectedCategoryId, currentFilter]);
+  }, [selectedDate, selectedCategoryId, currentFilter, currentTab]);
 
   const datesWithItems = useMemo(() => {
     const set = new Set<string>();
@@ -102,6 +107,10 @@ export default function App() {
   const completedTodayCount = useMemo(() => {
     return todayAgendas.filter(a => a.isCompleted).length;
   }, [todayAgendas]);
+
+  const allCompletedCount = useMemo(() => {
+    return allAgendas.filter(a => a.isCompleted).length;
+  }, [allAgendas]);
 
   const hasUnreadNotification = useMemo(() => {
     return allAgendas.some(a => a.hasReminder && !a.isCompleted && a.date === getTodayString());
@@ -139,12 +148,40 @@ export default function App() {
     setAddModalVisible(true);
   };
 
+  // Category Actions
+  const handleAddCategory = async (cat: Omit<Category, 'id'>) => {
+    const newCat: Category = {
+      ...cat,
+      id: `cat-${Date.now()}`,
+    };
+    await addCategory(newCat);
+    const loaded = await getCategories();
+    setCategories(loaded);
+  };
+
+  const handleUpdateCategory = async (cat: Category) => {
+    await updateCategory(cat);
+    const loaded = await getCategories();
+    setCategories(loaded);
+    await refreshAgendas();
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    await deleteCategory(id);
+    const loaded = await getCategories();
+    setCategories(loaded);
+    if (selectedCategoryId === id) {
+      setSelectedCategoryId('all');
+    }
+    await refreshAgendas();
+  };
+
   const handleTabSelect = (tab: NavTab) => {
-    setCurrentTab(tab);
     if (tab === 'today') {
+      setCurrentTab('today');
       setSelectedDate(getTodayString());
     } else if (tab === 'schedule') {
-      // Keep selected date, switch view focus
+      setCurrentTab('schedule');
     } else if (tab === 'categories') {
       setCategoryModalVisible(true);
     } else if (tab === 'profile') {
@@ -152,7 +189,12 @@ export default function App() {
     }
   };
 
-  const selectedDateLabel = selectedDate === getTodayString() ? 'Hari Ini' : selectedDate;
+  const selectedDateLabel =
+    currentTab === 'schedule'
+      ? 'Seluruh Kalender'
+      : selectedDate === getTodayString()
+      ? 'Hari Ini'
+      : selectedDate;
 
   if (loading) {
     return (
@@ -185,18 +227,27 @@ export default function App() {
           <View>
             {/* Hero Summary Card */}
             <HeroSummaryCard
-              totalAgendas={todayAgendas.length}
-              completedAgendas={completedTodayCount}
+              totalAgendas={currentTab === 'schedule' ? allAgendas.length : todayAgendas.length}
+              completedAgendas={currentTab === 'schedule' ? allCompletedCount : completedTodayCount}
               selectedDateLabel={selectedDateLabel}
-              onPressViewAll={() => handleTabSelect('schedule')}
+              onPressViewAll={() => handleTabSelect(currentTab === 'schedule' ? 'today' : 'schedule')}
             />
 
-            {/* Horizontal Date Selector */}
-            <DateStrip
-              selectedDate={selectedDate}
-              onSelectDate={d => setSelectedDate(d)}
-              datesWithItems={datesWithItems}
-            />
+            {/* Horizontal Date Selector (Tampil saat mode Hari Ini / Filter Tanggal) */}
+            {currentTab === 'today' ? (
+              <DateStrip
+                selectedDate={selectedDate}
+                onSelectDate={d => setSelectedDate(d)}
+                datesWithItems={datesWithItems}
+              />
+            ) : (
+              <View style={styles.allScheduleNotice}>
+                <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+                <Text style={styles.allScheduleNoticeText}>
+                  Menampilkan seluruh agenda kalender (semua tanggal)
+                </Text>
+              </View>
+            )}
 
             {/* Filter Bar */}
             <FilterBar
@@ -209,7 +260,11 @@ export default function App() {
 
             {/* Section Header */}
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Daftar Agenda ({agendas.length})</Text>
+              <Text style={styles.sectionTitle}>
+                {currentTab === 'schedule'
+                  ? `Seluruh Jadwal Agenda (${agendas.length})`
+                  : `Daftar Agenda ${selectedDateLabel} (${agendas.length})`}
+              </Text>
             </View>
           </View>
         }
@@ -284,6 +339,9 @@ export default function App() {
         categories={categories}
         agendas={allAgendas}
         onSelectCategoryFilter={catId => setSelectedCategoryId(catId)}
+        onAddCategory={handleAddCategory}
+        onUpdateCategory={handleUpdateCategory}
+        onDeleteCategory={handleDeleteCategory}
       />
 
       <ProfileModal
@@ -317,6 +375,22 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 20,
+  },
+  allScheduleNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgSurfaceSage,
+    marginHorizontal: spacing.xl,
+    marginVertical: spacing.sm,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: radii.button,
+    gap: 6,
+  },
+  allScheduleNoticeText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
   sectionHeaderRow: {
     paddingHorizontal: spacing.xl,

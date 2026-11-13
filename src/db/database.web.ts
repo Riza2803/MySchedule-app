@@ -115,3 +115,28 @@ export async function deleteAgenda(id: string): Promise<void> {
 export async function getCategories(): Promise<Category[]> {
   return Promise.resolve([...mockCategories]);
 }
+
+export async function addCategory(category: Category): Promise<void> {
+  mockCategories.push(category);
+  return Promise.resolve();
+}
+
+export async function updateCategory(category: Category): Promise<void> {
+  const idx = mockCategories.findIndex(c => c.id === category.id);
+  if (idx !== -1) {
+    mockCategories[idx] = category;
+  }
+  return Promise.resolve();
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  mockCategories = mockCategories.filter(c => c.id !== id);
+  // Re-assign agendas in deleted category to fallback
+  const fallbackId = mockCategories[0]?.id || 'cat-personal';
+  for (const a of mockAgendas) {
+    if (a.categoryId === id) {
+      a.categoryId = fallbackId;
+    }
+  }
+  return Promise.resolve();
+}
