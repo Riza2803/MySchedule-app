@@ -83,7 +83,7 @@ export const AgendaItemRow: React.FC<AgendaItemRowProps> = ({
 
           <View style={styles.metaRow}>
             <Text style={styles.timeText}>
-              {item.startTime} - {item.endTime}
+              {item.endTime ? `${item.startTime} - ${item.endTime}` : item.startTime}
             </Text>
             <Text style={styles.metaDivider}>•</Text>
             <View style={styles.categoryBadge}>

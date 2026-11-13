@@ -36,7 +36,7 @@ export const AddAgendaModal: React.FC<AddAgendaModalProps> = ({
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
   const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('10:00');
+  const [endTime, setEndTime] = useState('');
   const [categoryId, setCategoryId] = useState('cat-work');
   const [priority, setPriority] = useState<Priority>('medium');
   const [hasReminder, setHasReminder] = useState(true);
@@ -48,7 +48,7 @@ export const AddAgendaModal: React.FC<AddAgendaModalProps> = ({
       setDescription(editingItem.description || '');
       setDate(editingItem.date);
       setStartTime(editingItem.startTime);
-      setEndTime(editingItem.endTime);
+      setEndTime(editingItem.endTime || '');
       setCategoryId(editingItem.categoryId);
       setPriority(editingItem.priority);
       setHasReminder(editingItem.hasReminder);
@@ -57,7 +57,7 @@ export const AddAgendaModal: React.FC<AddAgendaModalProps> = ({
       setDescription('');
       setDate(initialDate || new Date().toISOString().split('T')[0]);
       setStartTime('09:00');
-      setEndTime('10:00');
+      setEndTime('');
       setCategoryId(categories[0]?.id || 'cat-work');
       setPriority('medium');
       setHasReminder(true);
@@ -79,7 +79,7 @@ export const AddAgendaModal: React.FC<AddAgendaModalProps> = ({
         description: description.trim(),
         date,
         startTime,
-        endTime,
+        endTime: endTime.trim() ? endTime.trim() : undefined,
         categoryId,
         priority,
         isCompleted: editingItem ? editingItem.isCompleted : false,
@@ -194,7 +194,7 @@ export const AddAgendaModal: React.FC<AddAgendaModalProps> = ({
             {/* Jam Mulai & Selesai */}
             <View style={styles.rowTwoCols}>
               <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-                <Text style={styles.label}>Jam Mulai</Text>
+                <Text style={styles.label}>Jam Mulai *</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="09:00"
@@ -204,7 +204,7 @@ export const AddAgendaModal: React.FC<AddAgendaModalProps> = ({
                 />
               </View>
               <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
-                <Text style={styles.label}>Jam Selesai</Text>
+                <Text style={styles.label}>Jam Selesai (Opsional)</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="10:00"
@@ -289,7 +289,11 @@ export const AddAgendaModal: React.FC<AddAgendaModalProps> = ({
             <View style={styles.reminderRow}>
               <View style={styles.reminderTextCol}>
                 <Text style={styles.reminderTitle}>Alarm Pengingat</Text>
-                <Text style={styles.reminderSubtitle}>Kirim notifikasi saat jadwal tiba</Text>
+                <Text style={styles.reminderSubtitle}>
+                  {endTime.trim()
+                    ? 'Notifikasi berbunyi saat jam mulai dan jam selesai tiba.'
+                    : 'Notifikasi berbunyi saat jam mulai tiba.'}
+                </Text>
               </View>
               <TouchableOpacity
                 style={[styles.toggleTrack, hasReminder && styles.toggleTrackActive]}

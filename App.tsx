@@ -26,6 +26,11 @@ import {
   deleteCategory,
 } from './src/db/database';
 import { triggerHaptic } from './src/utils/haptics';
+import {
+  scheduleAgendaNotifications,
+  cancelAgendaNotifications,
+  requestNotificationPermission,
+} from './src/utils/notifications';
 
 // Components
 import { TopBar } from './src/components/TopBar';
@@ -76,9 +81,18 @@ export default function App() {
   useEffect(() => {
     async function setup() {
       await initDatabase();
+      await requestNotificationPermission();
       const loadedCats = await getCategories();
       setCategories(loadedCats);
-      await refreshAgendas();
+      const all = await getAgendas();
+      setAllAgendas(all);
+      const filtered = await getAgendas(selectedDate, selectedCategoryId, currentFilter);
+      setAgendas(filtered);
+      for (const item of all) {
+        if (item.hasReminder && !item.isCompleted) {
+          scheduleAgendaNotifications(item);
+        }
+      }
       setLoading(false);
     }
     setup();
@@ -119,10 +133,19 @@ export default function App() {
   // Actions
   const handleToggleComplete = async (id: string, nextStatus: boolean) => {
     await toggleAgendaCompletion(id, nextStatus);
+    const target = allAgendas.find(a => a.id === id);
+    if (target) {
+      if (nextStatus) {
+        cancelAgendaNotifications(id);
+      } else {
+        await scheduleAgendaNotifications({ ...target, isCompleted: false });
+      }
+    }
     await refreshAgendas();
   };
 
   const handleDeleteItem = async (id: string) => {
+    cancelAgendaNotifications(id);
     await deleteAgenda(id);
     await refreshAgendas();
   };
@@ -131,15 +154,18 @@ export default function App() {
     data: Omit<AgendaItem, 'id' | 'createdAt'>,
     existingId?: string
   ) => {
+    let savedItem: AgendaItem;
     if (existingId) {
-      await updateAgenda({
+      savedItem = {
         ...data,
         id: existingId,
         createdAt: new Date().toISOString(),
-      });
+      };
+      await updateAgenda(savedItem);
     } else {
-      await addAgenda(data);
+      savedItem = await addAgenda(data);
     }
+    await scheduleAgendaNotifications(savedItem);
     await refreshAgendas();
   };
 

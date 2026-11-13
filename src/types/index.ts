@@ -13,7 +13,7 @@ export interface AgendaItem {
   description?: string;
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
-  endTime: string; // HH:mm
+  endTime?: string; // HH:mm (opsional)
   categoryId: string;
   priority: Priority;
   isCompleted: boolean;

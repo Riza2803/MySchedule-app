@@ -60,7 +60,12 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                   <View style={styles.reminderContent}>
                     <Text style={styles.reminderTitleText}>{item.title}</Text>
                     <Text style={styles.reminderTimeText}>
-                      {item.date} • {item.startTime} - {item.endTime}
+                      {item.date} • {item.endTime ? `${item.startTime} - ${item.endTime}` : item.startTime}
+                    </Text>
+                    <Text style={styles.reminderScheduleDetail}>
+                      {item.endTime
+                        ? 'Notif: Mulai dan selesai'
+                        : 'Notif: Mulai saja'}
                     </Text>
                   </View>
                 </View>
@@ -166,6 +171,12 @@ const styles = StyleSheet.create({
   reminderTimeText: {
     fontSize: 12,
     color: colors.textSecondary,
+    marginTop: 2,
+  },
+  reminderScheduleDetail: {
+    fontSize: 11,
+    color: colors.accentSage,
+    fontWeight: '500',
     marginTop: 2,
   },
 });

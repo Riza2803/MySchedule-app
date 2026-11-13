@@ -104,7 +104,7 @@ export async function initDatabase(): Promise<void> {
         await db.runAsync(
           `INSERT INTO agendas (id, title, description, date, startTime, endTime, categoryId, priority, isCompleted, hasReminder, createdAt)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-          [a.id, a.title, a.description || '', a.date, a.startTime, a.endTime, a.categoryId, a.priority, a.isCompleted ? 1 : 0, a.hasReminder ? 1 : 0, a.createdAt]
+          [a.id, a.title, a.description || '', a.date, a.startTime, a.endTime || '', a.categoryId, a.priority, a.isCompleted ? 1 : 0, a.hasReminder ? 1 : 0, a.createdAt]
         );
       }
     }
@@ -166,7 +166,7 @@ export async function addAgenda(item: Omit<AgendaItem, 'id' | 'createdAt'>): Pro
         newItem.description || '',
         newItem.date,
         newItem.startTime,
-        newItem.endTime,
+        newItem.endTime || '',
         newItem.categoryId,
         newItem.priority,
         newItem.isCompleted ? 1 : 0,
@@ -193,7 +193,7 @@ export async function updateAgenda(item: AgendaItem): Promise<void> {
         item.description || '',
         item.date,
         item.startTime,
-        item.endTime,
+        item.endTime || '',
         item.categoryId,
         item.priority,
         item.isCompleted ? 1 : 0,
