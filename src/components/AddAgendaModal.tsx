@@ -24,6 +24,13 @@ interface AddAgendaModalProps {
   editingItem?: AgendaItem | null;
 }
 
+function getCurrentTimeString(): string {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
 export const AddAgendaModal: React.FC<AddAgendaModalProps> = ({
   visible,
   onClose,
@@ -35,7 +42,7 @@ export const AddAgendaModal: React.FC<AddAgendaModalProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(initialDate || new Date().toISOString().split('T')[0]);
-  const [startTime, setStartTime] = useState('09:00');
+  const [startTime, setStartTime] = useState(getCurrentTimeString());
   const [endTime, setEndTime] = useState('');
   const [categoryId, setCategoryId] = useState('cat-work');
   const [priority, setPriority] = useState<Priority>('medium');
@@ -56,7 +63,7 @@ export const AddAgendaModal: React.FC<AddAgendaModalProps> = ({
       setTitle('');
       setDescription('');
       setDate(initialDate || new Date().toISOString().split('T')[0]);
-      setStartTime('09:00');
+      setStartTime(getCurrentTimeString());
       setEndTime('');
       setCategoryId(categories[0]?.id || 'cat-work');
       setPriority('medium');

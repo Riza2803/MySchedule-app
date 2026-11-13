@@ -30,6 +30,8 @@ import {
   scheduleAgendaNotifications,
   cancelAgendaNotifications,
   requestNotificationPermission,
+  setNotificationListener,
+  triggerTestNotification,
 } from './src/utils/notifications';
 
 // Components
@@ -43,6 +45,7 @@ import { AddAgendaModal } from './src/components/AddAgendaModal';
 import { NotificationModal } from './src/components/NotificationModal';
 import { CategoryModal } from './src/components/CategoryModal';
 import { ProfileModal } from './src/components/ProfileModal';
+import { NotificationBanner } from './src/components/NotificationBanner';
 
 function getTodayString(): string {
   const now = new Date();
@@ -69,6 +72,7 @@ export default function App() {
   const [notifModalVisible, setNotifModalVisible] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
+  const [bannerNotif, setBannerNotif] = useState<{ title: string; body: string } | null>(null);
 
   const refreshAgendas = async () => {
     const all = await getAgendas();
@@ -81,6 +85,9 @@ export default function App() {
   useEffect(() => {
     async function setup() {
       await initDatabase();
+      setNotificationListener((title, body) => {
+        setBannerNotif({ title, body });
+      });
       await requestNotificationPermission();
       const loadedCats = await getCategories();
       setCategories(loadedCats);
@@ -200,6 +207,11 @@ export default function App() {
       setSelectedCategoryId('all');
     }
     await refreshAgendas();
+  };
+
+  const handleTestNotification = async (): Promise<string> => {
+    const res = await triggerTestNotification();
+    return res.statusMessage;
   };
 
   const handleTabSelect = (tab: NavTab) => {
@@ -357,6 +369,7 @@ export default function App() {
         visible={notifModalVisible}
         onClose={() => setNotifModalVisible(false)}
         agendas={allAgendas}
+        onTestNotification={handleTestNotification}
       />
 
       <CategoryModal
@@ -377,6 +390,15 @@ export default function App() {
         onUpdateUserName={setUserName}
         agendas={allAgendas}
       />
+
+      {/* Floating In-App Notification Banner */}
+      {bannerNotif && (
+        <NotificationBanner
+          title={bannerNotif.title}
+          body={bannerNotif.body}
+          onDismiss={() => setBannerNotif(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }

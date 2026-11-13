@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AgendaItem } from '../types';
@@ -9,14 +9,32 @@ interface NotificationModalProps {
   visible: boolean;
   onClose: () => void;
   agendas: AgendaItem[];
+  onTestNotification: () => Promise<string>;
 }
 
 export const NotificationModal: React.FC<NotificationModalProps> = ({
   visible,
   onClose,
   agendas,
+  onTestNotification,
 }) => {
+  const [testResult, setTestResult] = useState('');
+  const [isTesting, setIsTesting] = useState(false);
+
   const reminderAgendas = agendas.filter(a => a.hasReminder && !a.isCompleted);
+
+  const handleTest = async () => {
+    triggerHaptic('medium');
+    setIsTesting(true);
+    try {
+      const msg = await onTestNotification();
+      setTestResult(msg);
+    } catch {
+      setTestResult('Pengujian selesai (audio dan banner alarm dipicu).');
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -24,7 +42,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
         <View style={styles.sheetContainer}>
           <View style={styles.headerRow}>
             <View>
-              <Text style={styles.headerTitle}>Pengingat Aktif</Text>
+              <Text style={styles.headerTitle}>Pengingat & Alarm</Text>
               <Text style={styles.headerSubtitle}>
                 {reminderAgendas.length} alarm jadwal menunggu konfirmasi
               </Text>
@@ -43,6 +61,37 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
           </View>
 
           <ScrollView style={styles.scrollBody} showsVerticalScrollIndicator={false}>
+            {/* Tombol Uji Coba Alarm */}
+            <View style={styles.testBox}>
+              <View style={styles.testHeader}>
+                <Ionicons name="volume-high-outline" size={20} color={colors.textPrimary} />
+                <Text style={styles.testTitle}>Uji Coba Suara & Alarm</Text>
+              </View>
+              <Text style={styles.testDesc}>
+                Tekan tombol di bawah untuk membunyikan suara alarm dan memunculkan banner notifikasi
+                pada perangkat Anda.
+              </Text>
+              <TouchableOpacity
+                style={styles.testButton}
+                onPress={handleTest}
+                disabled={isTesting}
+                accessibilityRole="button"
+                accessibilityLabel="Tes alarm notifikasi sekarang"
+              >
+                <Ionicons name="play" size={16} color={colors.textOnDark} style={{ marginRight: 6 }} />
+                <Text style={styles.testButtonText}>
+                  {isTesting ? 'Memicu Alarm...' : 'Tes Notifikasi Sekarang'}
+                </Text>
+              </TouchableOpacity>
+              {testResult ? (
+                <View style={styles.resultBadge}>
+                  <Text style={styles.resultText}>Status: {testResult}</Text>
+                </View>
+              ) : null}
+            </View>
+
+            <Text style={styles.listHeading}>Daftar Pengingat Aktif</Text>
+
             {reminderAgendas.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Ionicons name="notifications-off-outline" size={40} color={colors.textTertiary} />
@@ -89,7 +138,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgCanvas,
     borderTopLeftRadius: radii.hero,
     borderTopRightRadius: radii.hero,
-    maxHeight: '75%',
+    maxHeight: '80%',
     paddingBottom: spacing.xl,
   },
   headerRow: {
@@ -124,9 +173,64 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
   },
+  testBox: {
+    backgroundColor: colors.bgSurface,
+    borderRadius: radii.card,
+    borderWidth: 1,
+    borderColor: colors.borderHairline,
+    padding: 14,
+    marginBottom: 16,
+  },
+  testHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  testTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  testDesc: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    lineHeight: 16,
+    marginBottom: 12,
+  },
+  testButton: {
+    flexDirection: 'row',
+    backgroundColor: colors.bgHeroDark,
+    height: 42,
+    borderRadius: radii.pill,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  testButtonText: {
+    color: colors.textOnDark,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  resultBadge: {
+    backgroundColor: colors.bgSurfaceSage,
+    padding: 8,
+    borderRadius: radii.button,
+    marginTop: 10,
+  },
+  resultText: {
+    fontSize: 12,
+    color: colors.textPrimary,
+    lineHeight: 16,
+  },
+  listHeading: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: 10,
+  },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 30,
   },
   emptyTitle: {
     fontSize: 15,
