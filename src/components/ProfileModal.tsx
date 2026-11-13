@@ -23,6 +23,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [nameInput, setNameInput] = useState(userName);
   const [isEditing, setIsEditing] = useState(false);
 
+  React.useEffect(() => {
+    setNameInput(userName);
+  }, [userName, visible]);
+
   const completedCount = agendas.filter(a => a.isCompleted).length;
   const totalCount = agendas.length;
   const rate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -62,7 +66,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <View style={styles.userCard}>
               <View style={styles.avatarLarge}>
                 <Text style={styles.avatarLargeText}>
-                  {userName.charAt(0).toUpperCase() || 'R'}
+                  {(userName ? userName.charAt(0) : 'U').toUpperCase()}
                 </Text>
               </View>
 

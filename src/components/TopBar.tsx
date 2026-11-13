@@ -31,7 +31,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         <Text style={styles.microNote}>~ Fokus pada prioritas hari ini</Text>
         <View style={styles.greetingRow}>
           <Text style={styles.greetingText}>{getGreeting()} </Text>
-          <Text style={styles.nameText}>{userName}</Text>
+          <Text style={styles.nameText}>{userName || 'Kawan'}</Text>
         </View>
       </View>
 
@@ -61,7 +61,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           activeOpacity={0.7}
         >
           <View style={styles.avatarCircle}>
-            <Text style={styles.avatarInitial}>{userName.charAt(0).toUpperCase() || 'R'}</Text>
+            <Text style={styles.avatarInitial}>{(userName ? userName.charAt(0) : 'U').toUpperCase()}</Text>
           </View>
         </TouchableOpacity>
       </View>

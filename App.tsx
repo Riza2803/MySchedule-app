@@ -63,7 +63,7 @@ function getTodayString(): string {
 
 export default function App() {
   const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState('Riza');
+  const [userName, setUserName] = useState('');
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [agendas, setAgendas] = useState<AgendaItem[]>([]);
   const [allAgendas, setAllAgendas] = useState<AgendaItem[]>([]);

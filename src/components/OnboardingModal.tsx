@@ -55,7 +55,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             <Text style={styles.label}>Siapa nama panggilan Anda?</Text>
             <TextInput
               style={[styles.input, errorText ? styles.inputError : null]}
-              placeholder="Misal: Riza"
+              placeholder="Masukkan nama Anda"
               placeholderTextColor={colors.textTertiary}
               value={name}
               onChangeText={t => {
