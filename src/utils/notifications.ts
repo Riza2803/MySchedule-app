@@ -1,8 +1,10 @@
-import { Platform } from 'react-native';
+import { Platform, AppState, AppStateStatus } from 'react-native';
 import { AgendaItem } from '../types';
 
-let scheduledTimeouts: Map<string, any[]> = new Map();
 let activeNotificationListener: ((title: string, body: string) => void) | null = null;
+let notifiedEvents = new Set<string>();
+let activeAgendasList: AgendaItem[] = [];
+let tickerInterval: any = null;
 
 export function setNotificationListener(listener: ((title: string, body: string) => void) | null) {
   activeNotificationListener = listener;
@@ -14,18 +16,21 @@ export function playNotificationSound() {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtx) {
         const ctx = new AudioCtx();
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        // Two-tone pleasant chime (D5 -> A5)
-        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+        // Loud, clear two-tone alarm chime
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.18); // A5
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.6);
+        osc.stop(ctx.currentTime + 0.8);
       }
     } catch (e) {
       console.warn('Audio chime error:', e);
@@ -64,7 +69,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
   }
 }
 
-function fireAlarm(title: string, body: string) {
+export function fireAlarm(title: string, body: string) {
   playNotificationSound();
 
   if (activeNotificationListener) {
@@ -82,99 +87,150 @@ function fireAlarm(title: string, body: string) {
   }
 }
 
-export async function scheduleAgendaNotifications(agenda: AgendaItem): Promise<void> {
-  cancelAgendaNotifications(agenda.id);
-
-  if (!agenda.hasReminder || agenda.isCompleted) {
-    return;
-  }
-
-  const [year, month, day] = agenda.date.split('-').map(Number);
+function getTodayString(): string {
   const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
-  // 1. Notifikasi Jam Mulai
-  if (agenda.startTime) {
-    const [startH, startM] = agenda.startTime.split(':').map(Number);
-    const startDate = new Date(year, month - 1, day, startH, startM, 0);
+// Pemeriksaan berkala (Heartbeat Ticker)
+export function checkAlarms() {
+  const now = new Date();
+  const todayStr = getTodayString();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-    if (startDate > now) {
-      const title = `Agenda Dimulai: ${agenda.title}`;
-      const body = `Jadwal "${agenda.title}" dimulai sekarang (${agenda.startTime}).`;
+  for (const item of activeAgendasList) {
+    if (!item.hasReminder || item.isCompleted || item.date !== todayStr) {
+      continue;
+    }
 
-      if (Platform.OS === 'web') {
-        const diffMs = startDate.getTime() - now.getTime();
-        const timer = setTimeout(() => {
-          fireAlarm(title, body);
-        }, diffMs);
+    // 1. Cek Jam Mulai
+    if (item.startTime) {
+      const [sh, sm] = item.startTime.split(':').map(Number);
+      const startMinutes = sh * 60 + sm;
+      const startKey = `${item.id}-start-${item.date}`;
 
-        const list = scheduledTimeouts.get(agenda.id) || [];
-        list.push(timer);
-        scheduledTimeouts.set(agenda.id, list);
-      } else {
-        try {
-          const Notifications = require('expo-notifications');
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title,
-              body,
-              sound: true,
-            },
-            trigger: {
-              date: startDate,
-            },
-          });
-        } catch (e) {
-          console.warn('schedule start notification error:', e);
+      // Picu alarm jika waktu saat ini sama atau lewat maksimal 3 menit
+      if (currentMinutes >= startMinutes && currentMinutes <= startMinutes + 3) {
+        if (!notifiedEvents.has(startKey)) {
+          notifiedEvents.add(startKey);
+          fireAlarm(`Agenda Dimulai: ${item.title}`, `Jadwal "${item.title}" dimulai sekarang (${item.startTime}).`);
         }
       }
     }
-  }
 
-  // 2. Notifikasi Jam Selesai (hanya jika jam selesai diisi)
-  if (agenda.endTime && agenda.endTime.trim() !== '') {
-    const [endH, endM] = agenda.endTime.split(':').map(Number);
-    const endDate = new Date(year, month - 1, day, endH, endM, 0);
+    // 2. Cek Jam Selesai (hanya jika jam selesai diisi)
+    if (item.endTime && item.endTime.trim() !== '') {
+      const [eh, em] = item.endTime.split(':').map(Number);
+      const endMinutes = eh * 60 + em;
+      const endKey = `${item.id}-end-${item.date}`;
 
-    if (endDate > now) {
-      const title = `Agenda Selesai: ${agenda.title}`;
-      const body = `Waktu untuk agenda "${agenda.title}" telah berakhir (${agenda.endTime}).`;
-
-      if (Platform.OS === 'web') {
-        const diffMs = endDate.getTime() - now.getTime();
-        const timer = setTimeout(() => {
-          fireAlarm(title, body);
-        }, diffMs);
-
-        const list = scheduledTimeouts.get(agenda.id) || [];
-        list.push(timer);
-        scheduledTimeouts.set(agenda.id, list);
-      } else {
-        try {
-          const Notifications = require('expo-notifications');
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title,
-              body,
-              sound: true,
-            },
-            trigger: {
-              date: endDate,
-            },
-          });
-        } catch (e) {
-          console.warn('schedule end notification error:', e);
+      if (currentMinutes >= endMinutes && currentMinutes <= endMinutes + 3) {
+        if (!notifiedEvents.has(endKey)) {
+          notifiedEvents.add(endKey);
+          fireAlarm(`Agenda Selesai: ${item.title}`, `Batas waktu agenda "${item.title}" berakhir (${item.endTime}).`);
         }
       }
     }
   }
 }
 
-export function cancelAgendaNotifications(agendaId: string): void {
-  const timers = scheduledTimeouts.get(agendaId);
-  if (timers) {
-    timers.forEach(t => clearTimeout(t));
-    scheduledTimeouts.delete(agendaId);
+// Inisialisasi loop pemantau alarm
+export function startAlarmEngine(agendas: AgendaItem[]) {
+  activeAgendasList = agendas;
+
+  if (tickerInterval) {
+    clearInterval(tickerInterval);
   }
+
+  // Jalankan pemeriksaan setiap 2 detik
+  tickerInterval = setInterval(() => {
+    checkAlarms();
+  }, 2000);
+
+  // Jalankan juga saat tab aktif kembali
+  if (Platform.OS === 'web' && typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        checkAlarms();
+      }
+    });
+  }
+
+  AppState.addEventListener('change', (state: AppStateStatus) => {
+    if (state === 'active') {
+      checkAlarms();
+    }
+  });
+
+  // Periksa langsung sekarang
+  checkAlarms();
+}
+
+export function updateAlarmAgendas(agendas: AgendaItem[]) {
+  activeAgendasList = agendas;
+  checkAlarms();
+}
+
+export async function scheduleAgendaNotifications(agenda: AgendaItem): Promise<void> {
+  // Update list dan cek langsung
+  const idx = activeAgendasList.findIndex(a => a.id === agenda.id);
+  if (idx !== -1) {
+    activeAgendasList[idx] = agenda;
+  } else {
+    activeAgendasList.push(agenda);
+  }
+
+  checkAlarms();
+
+  // Native notification scheduling for Android / iOS APK
+  if (Platform.OS !== 'web' && agenda.hasReminder && !agenda.isCompleted) {
+    try {
+      const Notifications = require('expo-notifications');
+      const [year, month, day] = agenda.date.split('-').map(Number);
+      const now = new Date();
+
+      if (agenda.startTime) {
+        const [sh, sm] = agenda.startTime.split(':').map(Number);
+        const startDate = new Date(year, month - 1, day, sh, sm, 0);
+        if (startDate > now) {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: `Agenda Dimulai: ${agenda.title}`,
+              body: `Jadwal "${agenda.title}" dimulai sekarang (${agenda.startTime}).`,
+              sound: true,
+            },
+            trigger: { date: startDate },
+          });
+        }
+      }
+
+      if (agenda.endTime && agenda.endTime.trim() !== '') {
+        const [eh, em] = agenda.endTime.split(':').map(Number);
+        const endDate = new Date(year, month - 1, day, eh, em, 0);
+        if (endDate > now) {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: `Agenda Selesai: ${agenda.title}`,
+              body: `Batas waktu agenda "${agenda.title}" berakhir (${agenda.endTime}).`,
+              sound: true,
+            },
+            trigger: { date: endDate },
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Native schedule error:', e);
+    }
+  }
+}
+
+export function cancelAgendaNotifications(agendaId: string): void {
+  activeAgendasList = activeAgendasList.filter(a => a.id !== agendaId);
+  notifiedEvents.delete(`${agendaId}-start-${getTodayString()}`);
+  notifiedEvents.delete(`${agendaId}-end-${getTodayString()}`);
 }
 
 export async function triggerTestNotification(): Promise<{
@@ -194,12 +250,12 @@ export async function triggerTestNotification(): Promise<{
         webAllowed = permission === 'granted';
         statusMessage = webAllowed
           ? 'Izin browser aktif (Desktop/PWA)'
-          : 'Izin browser ditolak atau terbatas oleh browser mobile';
+          : 'Izin browser terbatas (in-app banner & suara aktif)';
       } catch {
-        statusMessage = 'Browser membatasi Web Notification API di koneksi HTTP';
+        statusMessage = 'Browser membatasi Web Notification di koneksi HTTP (in-app alarm aktif)';
       }
     } else {
-      statusMessage = 'Browser mobile tidak mendukung Web Notification di tab biasa';
+      statusMessage = 'Browser mobile tidak mendukung push HTTP (in-app banner & suara aktif)';
     }
   } else {
     try {
@@ -210,7 +266,7 @@ export async function triggerTestNotification(): Promise<{
           body,
           sound: true,
         },
-        trigger: null, // trigger immediately
+        trigger: null,
       });
       statusMessage = 'Notifikasi sistem native dipicu';
     } catch (e) {
@@ -218,7 +274,6 @@ export async function triggerTestNotification(): Promise<{
     }
   }
 
-  // Trigger in-app chime and banner
   fireAlarm(title, body);
 
   return {

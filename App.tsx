@@ -32,6 +32,8 @@ import {
   requestNotificationPermission,
   setNotificationListener,
   triggerTestNotification,
+  startAlarmEngine,
+  updateAlarmAgendas,
 } from './src/utils/notifications';
 
 // Components
@@ -77,6 +79,7 @@ export default function App() {
   const refreshAgendas = async () => {
     const all = await getAgendas();
     setAllAgendas(all);
+    updateAlarmAgendas(all);
     const dateParam = currentTab === 'today' ? selectedDate : undefined;
     const filtered = await getAgendas(dateParam, selectedCategoryId, currentFilter);
     setAgendas(filtered);
@@ -95,11 +98,7 @@ export default function App() {
       setAllAgendas(all);
       const filtered = await getAgendas(selectedDate, selectedCategoryId, currentFilter);
       setAgendas(filtered);
-      for (const item of all) {
-        if (item.hasReminder && !item.isCompleted) {
-          scheduleAgendaNotifications(item);
-        }
-      }
+      startAlarmEngine(all);
       setLoading(false);
     }
     setup();
