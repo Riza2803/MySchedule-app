@@ -9,7 +9,6 @@ Aplikasi manajemen agenda harian luring (offline-first) dengan widget interaktif
 ## Fitur
 
 * **Penyimpanan Lokal (SQLite):** Semua data agenda dan kategori tersimpan langsung di perangkat tanpa server luar.
-* **Widget Layar Utama Android:** Menampilkan tugas aktif dan jam mulai langsung di home screen, lengkap dengan tombol interaktif untuk mengubah status agenda tanpa harus membuka aplikasi.
 * **Pengingat Jadwal:** Alarm otomatis saat jam mulai dan jam selesai agenda tiba, dilengkapi suara lonceng dan banner in-app.
 * **Manajemen Kategori:** Tambah, edit warna atau ikon, serta hapus kategori dengan pengalihan tugas otomatis.
 * **Penyaring Tanggal & Status:** Navigasi cepat antar hari melalui date strip horizontal dan filter status (Semua, Tertunda, Selesai).
