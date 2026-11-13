@@ -20,11 +20,9 @@ export async function syncAndroidWidget(agendas: AgendaItem[]): Promise<void> {
     const day = String(now.getDate()).padStart(2, '0');
     const today = `${year}-${month}-${day}`;
 
-    const todayAgendas = agendas.filter(a => a.date === today);
-
     await requestWidgetUpdate({
       widgetName: 'ScheduleWidget',
-      renderWidget: () => <ScheduleWidget agendas={todayAgendas} />,
+      renderWidget: () => <ScheduleWidget agendas={agendas} todayDate={today} />,
     });
   } catch (err) {
     console.warn('syncAndroidWidget error:', err);

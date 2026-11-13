@@ -6,6 +6,12 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8F2E6"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.riza.myschedule"
@@ -13,11 +19,13 @@
     "android": {
       "package": "com.riza.myschedule",
       "adaptiveIcon": {
-        "backgroundColor": "#1F241E"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F8F2E6"
       }
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       [
@@ -27,11 +35,15 @@
             {
               "name": "ScheduleWidget",
               "label": "MySchedule Agenda",
-              "minWidth": "160dp",
-              "minHeight": "80dp",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
               "targetCellWidth": 4,
               "targetCellHeight": 2,
+              "maxResizeWidth": "500dp",
+              "maxResizeHeight": "400dp",
+              "resizeMode": "horizontal|vertical",
               "description": "Menampilkan agenda dan tugas aktif hari ini beserta jam mulai dan tombol status",
+              "previewImage": "./assets/widget-preview.png",
               "updatePeriodMillis": 1800000
             }
           ]

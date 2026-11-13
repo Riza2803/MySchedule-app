@@ -4,13 +4,15 @@ import { AgendaItem } from '../types';
 
 interface ScheduleWidgetProps {
   agendas: AgendaItem[];
+  todayDate: string;
 }
 
-export function ScheduleWidget({ agendas }: ScheduleWidgetProps) {
-  // Ambil maksimal 2 agenda untuk tampilan widget 4x2
-  const displayAgendas = (agendas || []).slice(0, 2);
-  const totalCount = agendas ? agendas.length : 0;
-  const completedCount = agendas ? agendas.filter(a => a.isCompleted).length : 0;
+export function ScheduleWidget({ agendas, todayDate }: ScheduleWidgetProps) {
+  const todayAgendas = (agendas || []).filter(a => a.date === todayDate);
+  // Jika ada agenda hari ini, tampilkan hari ini. Jika belum ada, tampilkan agenda terdekat yang ada.
+  const displayAgendas = (todayAgendas.length > 0 ? todayAgendas : agendas || []).slice(0, 2);
+  const totalToday = todayAgendas.length;
+  const completedToday = todayAgendas.filter(a => a.isCompleted).length;
 
   return (
     <FlexWidget
@@ -23,9 +25,8 @@ export function ScheduleWidget({ agendas }: ScheduleWidgetProps) {
         flexDirection: 'column',
         justifyContent: 'space-between',
       }}
-      clickAction="OPEN_APP"
     >
-      {/* Header Widget */}
+      {/* Header Widget - ketuk untuk membuka aplikasi */}
       <FlexWidget
         style={{
           width: 'match_parent',
@@ -34,6 +35,7 @@ export function ScheduleWidget({ agendas }: ScheduleWidgetProps) {
           alignItems: 'center',
           marginBottom: 8,
         }}
+        clickAction="OPEN_APP"
       >
         <FlexWidget
           style={{
@@ -60,7 +62,7 @@ export function ScheduleWidget({ agendas }: ScheduleWidgetProps) {
             />
           </FlexWidget>
           <TextWidget
-            text="Agenda Hari Ini"
+            text={todayAgendas.length > 0 ? 'Hari Ini' : 'Agenda'}
             style={{
               color: '#FAF9F6',
               fontSize: 12,
@@ -70,7 +72,7 @@ export function ScheduleWidget({ agendas }: ScheduleWidgetProps) {
         </FlexWidget>
 
         <TextWidget
-          text={`${completedCount}/${totalCount} Selesai`}
+          text={totalToday > 0 ? `${completedToday}/${totalToday} Selesai` : 'Buka Aplikasi'}
           style={{
             color: '#A4A7A0',
             fontSize: 11,
@@ -78,7 +80,7 @@ export function ScheduleWidget({ agendas }: ScheduleWidgetProps) {
         />
       </FlexWidget>
 
-      {/* Body Widget: Daftar Agenda */}
+      {/* Body: Daftar Agenda */}
       <FlexWidget
         style={{
           width: 'match_parent',
@@ -97,9 +99,10 @@ export function ScheduleWidget({ agendas }: ScheduleWidgetProps) {
               alignItems: 'center',
               justifyContent: 'center',
             }}
+            clickAction="OPEN_APP"
           >
             <TextWidget
-              text="Belum ada agenda hari ini"
+              text="Belum ada agenda"
               style={{
                 color: '#FAF9F6',
                 fontSize: 13,
@@ -108,10 +111,11 @@ export function ScheduleWidget({ agendas }: ScheduleWidgetProps) {
               }}
             />
             <TextWidget
-              text="Ketuk untuk buka aplikasi & tambah agenda"
+              text="+ Ketuk untuk menambah agenda"
               style={{
-                color: '#A4A7A0',
+                color: '#5A6E58',
                 fontSize: 11,
+                fontWeight: '700',
               }}
             />
           </FlexWidget>
@@ -136,13 +140,14 @@ export function ScheduleWidget({ agendas }: ScheduleWidgetProps) {
                   justifyContent: 'space-between',
                 }}
               >
-                {/* Kolom Informasi Tugas & Jam */}
+                {/* Kolom Informasi Tugas & Jam - ketuk teks untuk buka app */}
                 <FlexWidget
                   style={{
                     flex: 1,
                     flexDirection: 'column',
                     marginRight: 8,
                   }}
+                  clickAction="OPEN_APP"
                 >
                   <TextWidget
                     text={timeLabel}
@@ -200,9 +205,10 @@ export function ScheduleWidget({ agendas }: ScheduleWidgetProps) {
           alignItems: 'center',
           marginTop: 2,
         }}
+        clickAction="OPEN_APP"
       >
         <TextWidget
-          text="Ketuk kartu untuk membuka aplikasi"
+          text="Ketuk judul atau header untuk membuka MySchedule"
           style={{
             color: '#6E716A',
             fontSize: 9,
