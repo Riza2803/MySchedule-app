@@ -6,6 +6,44 @@ let notifiedEvents = new Set<string>();
 let activeAgendasList: AgendaItem[] = [];
 let tickerInterval: any = null;
 
+// Konfigurasi handler notifikasi native (Android / iOS)
+if (Platform.OS !== 'web') {
+  try {
+    const Notifications = require('expo-notifications');
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+  } catch (e) {
+    console.warn('Notifications handler init error:', e);
+  }
+}
+
+// Inisialisasi Service Worker untuk Web (agar notifikasi bisa masuk ke Notification Center OS tanpa gesture klik langsung)
+export function initServiceWorker() {
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    const registerSW = () => {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then(reg => {
+          console.log('Service Worker registered for notifications:', reg.scope);
+        })
+        .catch(err => {
+          console.warn('Service Worker registration failed:', err);
+        });
+    };
+
+    if (document.readyState === 'complete') {
+      registerSW();
+    } else {
+      window.addEventListener('load', registerSW);
+    }
+  }
+}
+
 export function setNotificationListener(listener: ((title: string, body: string) => void) | null) {
   activeNotificationListener = listener;
 }
@@ -22,9 +60,8 @@ export function playNotificationSound() {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        // Loud, clear two-tone alarm chime
-        osc.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
-        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.18); // A5
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime);
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.18);
         gain.gain.setValueAtTime(0.5, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
         osc.connect(gain);
@@ -76,13 +113,48 @@ export function fireAlarm(title: string, body: string) {
     activeNotificationListener(title, body);
   }
 
+  // 1. Web Notification (menggunakan Service Worker agar lolos ke Notification Center OS tanpa gesture aktif)
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      try {
-        new Notification(title, { body });
-      } catch (e) {
-        console.warn('Web notification dispatch error:', e);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready
+          .then(registration => {
+            registration.showNotification(title, {
+              body,
+              icon: '/favicon.png',
+              badge: '/favicon.png',
+              tag: `agenda-${Date.now()}`,
+            });
+          })
+          .catch(() => {
+            try {
+              new Notification(title, { body });
+            } catch (e) {
+              console.warn('Web notification dispatch error:', e);
+            }
+          });
+      } else {
+        try {
+          new Notification(title, { body });
+        } catch (e) {
+          console.warn('Web notification dispatch error:', e);
+        }
       }
+    }
+  } else {
+    // 2. Native Notification Center (Android / iOS)
+    try {
+      const Notifications = require('expo-notifications');
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          sound: true,
+        },
+        trigger: null,
+      });
+    } catch (e) {
+      console.warn('Native fireAlarm error:', e);
     }
   }
 }
@@ -95,7 +167,6 @@ function getTodayString(): string {
   return `${year}-${month}-${day}`;
 }
 
-// Pemeriksaan berkala (Heartbeat Ticker)
 export function checkAlarms() {
   const now = new Date();
   const todayStr = getTodayString();
@@ -112,7 +183,6 @@ export function checkAlarms() {
       const startMinutes = sh * 60 + sm;
       const startKey = `${item.id}-start-${item.date}`;
 
-      // Picu alarm jika waktu saat ini sama atau lewat maksimal 3 menit
       if (currentMinutes >= startMinutes && currentMinutes <= startMinutes + 3) {
         if (!notifiedEvents.has(startKey)) {
           notifiedEvents.add(startKey);
@@ -121,7 +191,7 @@ export function checkAlarms() {
       }
     }
 
-    // 2. Cek Jam Selesai (hanya jika jam selesai diisi)
+    // 2. Cek Jam Selesai
     if (item.endTime && item.endTime.trim() !== '') {
       const [eh, em] = item.endTime.split(':').map(Number);
       const endMinutes = eh * 60 + em;
@@ -137,7 +207,6 @@ export function checkAlarms() {
   }
 }
 
-// Inisialisasi loop pemantau alarm
 export function startAlarmEngine(agendas: AgendaItem[]) {
   activeAgendasList = agendas;
 
@@ -145,12 +214,10 @@ export function startAlarmEngine(agendas: AgendaItem[]) {
     clearInterval(tickerInterval);
   }
 
-  // Jalankan pemeriksaan setiap 2 detik
   tickerInterval = setInterval(() => {
     checkAlarms();
   }, 2000);
 
-  // Jalankan juga saat tab aktif kembali
   if (Platform.OS === 'web' && typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
@@ -165,7 +232,6 @@ export function startAlarmEngine(agendas: AgendaItem[]) {
     }
   });
 
-  // Periksa langsung sekarang
   checkAlarms();
 }
 
@@ -175,7 +241,6 @@ export function updateAlarmAgendas(agendas: AgendaItem[]) {
 }
 
 export async function scheduleAgendaNotifications(agenda: AgendaItem): Promise<void> {
-  // Update list dan cek langsung
   const idx = activeAgendasList.findIndex(a => a.id === agenda.id);
   if (idx !== -1) {
     activeAgendasList[idx] = agenda;
@@ -185,7 +250,6 @@ export async function scheduleAgendaNotifications(agenda: AgendaItem): Promise<v
 
   checkAlarms();
 
-  // Native notification scheduling for Android / iOS APK
   if (Platform.OS !== 'web' && agenda.hasReminder && !agenda.isCompleted) {
     try {
       const Notifications = require('expo-notifications');
@@ -249,13 +313,13 @@ export async function triggerTestNotification(): Promise<{
         const permission = await Notification.requestPermission();
         webAllowed = permission === 'granted';
         statusMessage = webAllowed
-          ? 'Izin browser aktif (Desktop/PWA)'
-          : 'Izin browser terbatas (in-app banner & suara aktif)';
+          ? 'Izin browser aktif (Notifikasi dikirim ke Notification Center)'
+          : 'Izin browser ditolak atau terbatas oleh browser mobile';
       } catch {
-        statusMessage = 'Browser membatasi Web Notification di koneksi HTTP (in-app alarm aktif)';
+        statusMessage = 'Browser membatasi Web Notification di koneksi HTTP';
       }
     } else {
-      statusMessage = 'Browser mobile tidak mendukung push HTTP (in-app banner & suara aktif)';
+      statusMessage = 'Browser mobile tidak mendukung push HTTP';
     }
   } else {
     try {

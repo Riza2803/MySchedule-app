@@ -34,6 +34,7 @@ import {
   triggerTestNotification,
   startAlarmEngine,
   updateAlarmAgendas,
+  initServiceWorker,
 } from './src/utils/notifications';
 
 // Components
@@ -88,6 +89,7 @@ export default function App() {
   useEffect(() => {
     async function setup() {
       await initDatabase();
+      initServiceWorker();
       setNotificationListener((title, body) => {
         setBannerNotif({ title, body });
       });
