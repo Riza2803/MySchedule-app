@@ -37,6 +37,12 @@
           ]
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f9bce4a1-58b1-4fa5-84ad-6e3d2603db4c"
+      }
+    },
+    "owner": "riza2803"
   }
 }
