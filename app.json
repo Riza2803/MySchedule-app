@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "MySchedule",
+    "slug": "myschedule",
+    "scheme": "myschedule",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.riza.myschedule"
+    },
+    "android": {
+      "package": "com.riza.myschedule",
+      "adaptiveIcon": {
+        "backgroundColor": "#1F241E"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
