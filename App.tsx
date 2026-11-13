@@ -24,6 +24,8 @@ import {
   addCategory,
   updateCategory,
   deleteCategory,
+  getUserName,
+  setUserNameSetting,
 } from './src/db/database';
 import { triggerHaptic } from './src/utils/haptics';
 import {
@@ -49,6 +51,7 @@ import { NotificationModal } from './src/components/NotificationModal';
 import { CategoryModal } from './src/components/CategoryModal';
 import { ProfileModal } from './src/components/ProfileModal';
 import { NotificationBanner } from './src/components/NotificationBanner';
+import { OnboardingModal } from './src/components/OnboardingModal';
 
 function getTodayString(): string {
   const now = new Date();
@@ -76,6 +79,7 @@ export default function App() {
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [bannerNotif, setBannerNotif] = useState<{ title: string; body: string } | null>(null);
+  const [onboardingVisible, setOnboardingVisible] = useState(false);
 
   const refreshAgendas = async () => {
     const all = await getAgendas();
@@ -94,6 +98,16 @@ export default function App() {
         setBannerNotif({ title, body });
       });
       await requestNotificationPermission();
+
+      // Cek apakah pengguna baru pertama kali membuka aplikasi
+      const savedName = await getUserName();
+      if (savedName && savedName.trim()) {
+        setUserName(savedName);
+        setOnboardingVisible(false);
+      } else {
+        setOnboardingVisible(true);
+      }
+
       const loadedCats = await getCategories();
       setCategories(loadedCats);
       const all = await getAgendas();
@@ -213,6 +227,12 @@ export default function App() {
   const handleTestNotification = async (): Promise<string> => {
     const res = await triggerTestNotification();
     return res.statusMessage;
+  };
+
+  const handleCompleteOnboarding = async (name: string) => {
+    setUserName(name);
+    await setUserNameSetting(name);
+    setOnboardingVisible(false);
   };
 
   const handleTabSelect = (tab: NavTab) => {
@@ -388,8 +408,14 @@ export default function App() {
         visible={profileModalVisible}
         onClose={() => setProfileModalVisible(false)}
         userName={userName}
-        onUpdateUserName={setUserName}
+        onUpdateUserName={handleCompleteOnboarding}
         agendas={allAgendas}
+      />
+
+      {/* Onboarding Welcome Modal */}
+      <OnboardingModal
+        visible={onboardingVisible}
+        onSaveName={handleCompleteOnboarding}
       />
 
       {/* Floating In-App Notification Banner */}

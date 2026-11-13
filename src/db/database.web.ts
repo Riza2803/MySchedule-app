@@ -140,3 +140,21 @@ export async function deleteCategory(id: string): Promise<void> {
   }
   return Promise.resolve();
 }
+
+let savedUserName: string | null = null;
+
+export async function getUserName(): Promise<string | null> {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    const val = localStorage.getItem('myschedule_user_name');
+    if (val) return val;
+  }
+  return Promise.resolve(savedUserName);
+}
+
+export async function setUserNameSetting(name: string): Promise<void> {
+  savedUserName = name;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    localStorage.setItem('myschedule_user_name', name);
+  }
+  return Promise.resolve();
+}

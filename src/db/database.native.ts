@@ -86,6 +86,11 @@ export async function initDatabase(): Promise<void> {
         hasReminder INTEGER NOT NULL DEFAULT 0,
         createdAt TEXT NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY NOT NULL,
+        value TEXT NOT NULL
+      );
     `);
 
     const existingCats = await db.getAllAsync<any>('SELECT id FROM categories LIMIT 1;');
@@ -271,5 +276,31 @@ export async function deleteCategory(id: string): Promise<void> {
     await db.runAsync('DELETE FROM categories WHERE id=?;', [id]);
   } catch (err) {
     console.error('deleteCategory error:', err);
+  }
+}
+
+export async function getUserName(): Promise<string | null> {
+  if (!db) return null;
+  try {
+    const rows = await db.getAllAsync<any>('SELECT value FROM settings WHERE key = ? LIMIT 1;', ['user_name']);
+    if (rows.length > 0) {
+      return rows[0].value;
+    }
+    return null;
+  } catch (err) {
+    console.error('getUserName error:', err);
+    return null;
+  }
+}
+
+export async function setUserNameSetting(name: string): Promise<void> {
+  if (!db) return;
+  try {
+    await db.runAsync(
+      'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?);',
+      ['user_name', name]
+    );
+  } catch (err) {
+    console.error('setUserNameSetting error:', err);
   }
 }
