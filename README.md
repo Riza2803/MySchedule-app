@@ -23,7 +23,7 @@
         Penyaring Tanggal & Status: Navigasi cepat antar hari melalui date
     strip horizontal dan filter status (Semua, Tertunda, Selesai).
         Profil & Statistik: Menampilkan tingkat penyelesaian tugas dan  
-  pengaturan nama pengguna. 
+    pengaturan nama pengguna. 
   
     ## Arah Desain
   
