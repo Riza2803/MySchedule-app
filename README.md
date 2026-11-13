@@ -1,40 +1,76 @@
 # MySchedule
 
-Aplikasi pelacak agenda dan pengingat jadwal harian berbasis luring (offline-first). Dibangun menggunakan React Native, Expo SDK 58, TypeScript, dan basis data SQLite lokal.
+Aplikasi manajemen agenda harian luring (offline-first) dengan widget interaktif Android. Dibuat menggunakan React Native (Expo SDK 58), TypeScript, dan SQLite lokal.
+
+<p align="center">
+  <img src="./assets/icon.png" width="120" height="120" alt="Logo MySchedule" style="border-radius: 24px;" />
+</p>
+
+## Fitur
+
+* **Penyimpanan Lokal (SQLite):** Semua data agenda dan kategori tersimpan langsung di perangkat tanpa server luar.
+* **Widget Layar Utama Android:** Menampilkan tugas aktif dan jam mulai langsung di home screen, lengkap dengan tombol interaktif untuk mengubah status agenda tanpa harus membuka aplikasi.
+* **Pengingat Jadwal:** Alarm otomatis saat jam mulai dan jam selesai agenda tiba, dilengkapi suara lonceng dan banner in-app.
+* **Manajemen Kategori:** Tambah, edit warna atau ikon, serta hapus kategori dengan pengalihan tugas otomatis.
+* **Penyaring Tanggal & Status:** Navigasi cepat antar hari melalui date strip horizontal dan filter status (Semua, Tertunda, Selesai).
+* **Profil & Statistik:** Menampilkan tingkat penyelesaian tugas dan pengaturan nama pengguna.
 
 ## Arah Desain
-Mengacu pada spesifikasi desain Warm Organic Minimalism dan Tactile Editorial:
-* Spektrum warna Warm Alabaster (`#F5F3EF`), Surface (`#FAF9F6`), dan Dark Forest Charcoal (`#1F241E`).
-* Hierarki visual berbasis kontras permukaan dan garis hairline, tanpa bayangan tebal.
-* Tipografi terstruktur dengan dukungan angka tabular yang mudah dipindai.
-* Floating Navigation Dock melayang di bagian bawah dengan Detached Action Button terpisah.
 
-## Fitur Utama
-* Penyimpanan Lokal Penuh: Seluruh data agenda tersimpan di SQLite lokal perangkat tanpa memerlukan koneksi internet.
-* Ringkasan Agenda Hari Ini: Kartu ringkasan utama menampilkan rasio agenda selesai, total jadwal, dan indikator progres.
-* Pemilih Tanggal Horizontal: Navigasi cepat antar hari dengan penanda titik agenda aktif.
-* Pengelompokan Kategori: Klasifikasi jadwal ke dalam Pekerjaan, Pribadi, Finansial, Kesehatan, dan Belajar.
-* Manajemen Status Agenda: Tandai selesai atau tertunda secara instan dengan konfirmasi haptic feedback.
-* Formulir Agenda Lengkap: Pengaturan judul, tanggal, jam mulai, jam selesai, tingkat prioritas, dan alarm notifikasi.
-* Modal Pengingat & Profil: Melihat daftar alarm jadwal yang aktif dan statistik rasio penyelesaian tugas.
+Aplikasi menggunakan palet warna Warm Organic Minimalism:
+* Latar: `#F5F3EF` (Alabaster) dan `#FAF9F6` (Surface)
+* Kontras & Kartu Gelap: `#1F241E` (Dark Forest)
+* Aksen: `#5A6E58` (Sage Green) dan `#D4973B` (Warm Ochre)
+* Navigasi: Floating bottom dock dengan tombol tambah terpisah
 
-## Spesifikasi Teknis
-* Framework: React Native 0.88.1, Expo SDK 58, React 19.3.0
-* Bahasa: TypeScript 6.0.3
-* Basis Data: expo-sqlite (native) dengan fallback memori (web)
-* Ikon: @expo/vector-icons (Ionicons)
-* Haptics: expo-haptics
-* Package Android: com.riza.myschedule
+## Struktur Proyek
 
-## Cara Menjalankan
+```
+MySchedule/
+├── assets/                  # Logo aplikasi, splash screen, dan preview widget
+├── src/
+│   ├── components/          # Komponen antarmuka (TopBar, HeroCard, Modal, dll.)
+│   ├── db/                  # Pengelolaan SQLite (native) dan fallback (web)
+│   ├── theme/               # Token desain (warna, tipografi, jarak)
+│   ├── types/               # Definisi tipe data TypeScript
+│   ├── utils/               # Logika notifikasi alarm dan haptics
+│   └── widgets/             # Komponen dan background task widget Android
+├── App.tsx                  # Komponen utama aplikasi
+├── app.json                 # Konfigurasi Expo dan plugin widget
+├── eas.json                 # Konfigurasi build APK Android
+└── index.ts                 # Titik masuk aplikasi dan pendaftaran task widget
+```
+
+## Menjalankan Proyek Secara Lokal
+
+Pastikan Node.js dan npm sudah terpasang di komputer Anda.
 
 ```bash
-# Menjalankan server pengembangan
+# Pasang dependensi
+npm install
+
+# Jalankan server pengembangan
 npm start
 
-# Menjalankan di platform web
+# Buka versi web
 npm run web
-
-# Menjalankan di emulator atau perangkat Android
-npm run android
 ```
+
+Untuk membuka di ponsel lewat jaringan lokal atau Tailscale:
+```bash
+npx expo start --host lan
+```
+
+## Membangun File APK (Android)
+
+Build APK mandiri menggunakan Expo Application Services (EAS):
+
+```bash
+# Login ke akun Expo
+npx eas-cli login
+
+# Jalankan build APK profil preview
+npx eas-cli build -p android --profile preview
+```
+
+File instalasi `.apk` akan dibuat di cloud Expo dan siap diunduh ke ponsel Android.
