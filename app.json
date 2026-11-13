@@ -18,6 +18,25 @@
     },
     "web": {
       "bundler": "metro"
-    }
+    },
+    "plugins": [
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "ScheduleWidget",
+              "label": "MySchedule Agenda",
+              "minWidth": "160dp",
+              "minHeight": "80dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "description": "Menampilkan agenda dan tugas aktif hari ini beserta jam mulai dan tombol status",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
+    ]
   }
 }

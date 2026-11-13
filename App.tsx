@@ -52,6 +52,7 @@ import { CategoryModal } from './src/components/CategoryModal';
 import { ProfileModal } from './src/components/ProfileModal';
 import { NotificationBanner } from './src/components/NotificationBanner';
 import { OnboardingModal } from './src/components/OnboardingModal';
+import { syncAndroidWidget } from './src/widgets/widgetManager';
 
 function getTodayString(): string {
   const now = new Date();
@@ -85,6 +86,7 @@ export default function App() {
     const all = await getAgendas();
     setAllAgendas(all);
     updateAlarmAgendas(all);
+    syncAndroidWidget(all);
     const dateParam = currentTab === 'today' ? selectedDate : undefined;
     const filtered = await getAgendas(dateParam, selectedCategoryId, currentFilter);
     setAgendas(filtered);
@@ -115,6 +117,7 @@ export default function App() {
       const filtered = await getAgendas(selectedDate, selectedCategoryId, currentFilter);
       setAgendas(filtered);
       startAlarmEngine(all);
+      syncAndroidWidget(all);
       setLoading(false);
     }
     setup();
